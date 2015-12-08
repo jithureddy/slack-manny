@@ -10,9 +10,10 @@
 #   These are from the scripting documentation: https://github.com/github/hubot/blob/master/docs/scripting.md
 
 module.exports = (robot) ->
- 
+ robot.brain.data.partialTasks = {}
+ robot.brain.data.partialTaskIds = []
  jsonfile = require('jsonfile')
-    
+ taskHandler = require("../helper_modules/task-handler");   
  fs = require('fs')
  util = require('util')
  JSONPATH = 'DATA.json'
@@ -205,24 +206,23 @@ module.exports = (robot) ->
                 res.reply "Looks like no backlog with name #{backlogName} as such..! \n or no task under #{backlogName}"
             else 
                 res.reply "Here are the list of tasks under  #{backlogName} \n #{workitemsList}"
- robot.respond /Create[ \t]([^\s]+)[ \t](.*)(?:for)(.*)/i, (res) ->
-        type = res.match[1]
-        typeDetail = res.match[2]
-        user = res.match[3]
-    
-        if WORK_ITEMS.indexOf(type.toUppercase())
-            
-            res.reply "I can create for you"
-        else
-            res.reply "Creation of #{type} is not available at this time"
- robot.respond /Create[ \t]([^\s]+)[ \t](.*)/i, (res) ->
-        type = res.match[1]
-        typeDetail = res.match[2]
-        user = res.match[3]
+ robot.respond /Create[ \t]([^\s]+)[ \t](.*)(?:for)(.*)|Create[ \t]([^\s]+)[ \t](.*)/i, (res) ->
+          console.log "under for command"
+          taskHandler.createWorkitem(robot,res)
+# robot.respond /Create[ \t]([^\s]+)[ \t](.*)/i, (res) ->
+#          console.log "under normal command"
+#          taskHandler.createWorkitem(robot,res)
+ robot.respond /hola manny (.*)/i, (res) -> 
+        message = taskHandler.createWorkitem(res)
+        if robot.brain.get('partialTaskiExists')
+            res.reply robot.brain.get('partialTaskiExists')
+        res.reply "#{message}"
+  robot.respond /hola task exists (.*)/i, (res) -> 
         
-        
-        if WORK_ITEMS.indexOf(type.toUppercase())
-            res.reply "I can create for you"
-        else
-            res.reply "Creation of #{type} is not available at this time"
+        robot.brain.set 'partialTaskiExists', true
     
+        res.reply "partial task is created"           
+ robot.respond /clear brain/i, (res) -> 
+        taskHandler.clearBrainData(robot,res)
+ robot.respond /(me|user is(.*))/i, (res) -> 
+        taskHandler.handlePartialTask(robot,res)
